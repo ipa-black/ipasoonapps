@@ -11,7 +11,6 @@
         .container { max-width: 650px; width: 100%; padding: 30px; background: #ffffff; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 25px; }
         .profile-img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #0066cc; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 102, 204, 0.15); margin-bottom: 20px; }
         
-        /* قسم الإعدادات السري */
         .settings-card { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: right; display: none; border: 1px solid #cbd5e1; }
         .settings-card h3 { color: #1e293b; margin-bottom: 12px; font-size: 1.1rem; }
         .settings-card input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; text-align: left; direction: ltr; }
@@ -36,7 +35,6 @@
         .btn-primary:hover { background-color: #004499; }
         .btn-secondary { background-color: #e2e8f0; color: #334155; }
         .btn-secondary:hover { background-color: #cbd5e1; }
-        .btn-danger { background-color: #ef4444; color: white; }
         
         .apps-list { display: flex; flex-direction: column; gap: 15px; }
         .app-item { display: flex; align-items: flex-start; justify-content: space-between; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; gap: 15px; }
@@ -68,12 +66,12 @@
         </div>
 
         <div id="settings-card" class="settings-card">
-            <h3>تكوين حساب GitHub (يُحفظ في متصفحك فقط)</h3>
-            <input type="password" id="gh-token" placeholder="رمز الوصول الشخصي الشخصي (GitHub Token - ghp_...)">
-            <input type="text" id="gh-owner" placeholder="اسم الحساب المالك للمستودع (Owner) مثلاً: ipa-black">
+            <h3>تكوين حساب GitHub (يُحفظ محلياً في متصفحك)</h3>
+            <input type="password" id="gh-token" placeholder="رمز الوصول (GitHub Token - ghp_...)">
+            <input type="text" id="gh-owner" placeholder="اسم المالك (Owner) مثلاً: ipa-black">
             <input type="text" id="gh-repo" placeholder="اسم المستودع (Repository) مثلاً: ipasoonapps">
             <input type="text" id="gh-tag" placeholder="وسم الإصدار (Release Tag) مثلاً: apps">
-            <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%;">حفظ الإعدادات محلياً</button>
+            <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%;">حفظ وإعادة تحميل</button>
         </div>
 
         <div id="drop-zone" class="upload-box">
@@ -81,12 +79,12 @@
                 <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
             </svg>
             <div class="upload-text">اسحب وأفلت ملفات IPA هنا أو اضغط للتصفح</div>
-            <div class="upload-hint">مباشر ومفتوح الحجم - الرفع آمن ومباشر إلى جيت هب</div>
+            <div class="upload-hint">مرفوع عبر خادم البروكسي الخاص بك بدون مشاكل CORS</div>
             <input type="file" id="file-input" accept=".ipa" multiple>
         </div>
         
         <div class="upload-progress-container" id="progress-container">
-            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية المباشرة:</h4>
+            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية عبر البروكسي:</h4>
             <div id="progress-list"></div>
         </div>
     </div>
@@ -103,7 +101,6 @@
     </div>
 
     <script>
-        // دالة جلب الإعدادات من الـ LocalStorage
         function getConfigs() {
             return {
                 token: localStorage.getItem('gh_token') || '',
@@ -142,7 +139,7 @@
             localStorage.setItem('gh_owner', document.getElementById('gh-owner').value.trim());
             localStorage.setItem('gh_repo', document.getElementById('gh-repo').value.trim());
             localStorage.setItem('gh_tag', document.getElementById('gh-tag').value.trim());
-            alert('تم حفظ الإعدادات بنجاح في متصفحك الحالي!');
+            alert('تم الحفظ بنجاح!');
             document.getElementById('settings-card').style.display = 'none';
             loadUploadedApps();
         }
@@ -160,7 +157,7 @@
 
         async function handleFiles(files) {
             const conf = getConfigs();
-            if(!conf.token) { alert('برجاء إدخال توكن جيت هب أولاً من لوحة الإعدادات!'); return; }
+            if(!conf.token) { alert('برجاء إدخال توكن جيت هب في الإعدادات أولاً!'); return; }
             progressContainer.style.display = "block";
             const ipaFiles = Array.from(files).filter(f => f.name.endsWith('.ipa'));
             for (let file of ipaFiles) {
@@ -175,9 +172,10 @@
             const pItem = document.createElement('div');
             pItem.className = 'progress-item';
             pItem.id = itemKey;
-            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">جاري استخراج الأيقونة...</span>`;
+            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">معالجة الأيقونة...</span>`;
             progressList.appendChild(pItem);
 
+            // نرسل التوكن في الهيدر ليمر عبر البروكسي بأمان
             const headers = { 'Authorization': `token ${conf.token}` };
 
             try {
@@ -197,31 +195,31 @@
 
                 await new Promise(r => setTimeout(r, 1000));
 
-                // 1. رفع الأيقونة مباشرة إلى مستودع جيت هب
+                // 1. رفع الأيقونة عبر البروكسي العام المعرّف بـ vercel.json
                 if (iconBlob) {
-                    document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع الأيقونة للـ GitHub...";
+                    document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الأيقونة (Proxy)...";
                     const reader = new FileReader();
                     reader.readAsDataURL(iconBlob);
                     await new Promise(r => reader.onload = r);
                     const base64Icon = reader.result.split(',')[1];
 
-                    await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/icons/${iconName}`, {
+                    await fetch(`/api/github/${conf.owner}/${conf.repo}/contents/icons/${iconName}`, {
                         method: 'PUT',
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: `Upload icon ${iconName}`, content: base64Icon })
                     });
                 }
 
-                // 2. التحقق من الريليس أو إنشائه
+                // 2. التحقق من الـ Release عبر البروكسي الموجه للـ Releases
                 document.getElementById(itemKey).querySelector('span:last-child').textContent = "تهيئة الـ Release...";
                 let releaseId;
-                const relCheck = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
+                const relCheck = await fetch(`/api/github-releases/releases/tags/${conf.tag}`, { headers });
                 
                 if (relCheck.ok) {
                     const relData = await relCheck.json();
                     releaseId = relData.id;
                 } else {
-                    const createRel = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases`, {
+                    const createRel = await fetch(`/api/github/${conf.owner}/${conf.repo}/releases`, {
                         method: 'POST',
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ tag_name: conf.tag, name: conf.tag, body: "IPA Storage" })
@@ -230,43 +228,43 @@
                     releaseId = newRelData.id;
                 }
 
-                // 3. رفع ملف الـ IPA مباشرة وبدون استهلاك ذاكرة (مستقر وسريع جداً مهما كبر الحجم)
-                document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع ملف الـ IPA المباشر...";
-                const uploadUrl = `https://uploads.github.com/repos/${conf.owner}/${conf.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(file.name)}`;
+                // 3. رفع ملف الـ IPA عبر مسار الـ github-upload المخصص في الـ rewrites لديك
+                document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الـ IPA (Proxy Upload)...";
+                const uploadUrl = `/api/github-upload/${conf.owner}/${conf.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(file.name)}`;
                 
                 const ipaRes = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: { ...headers, 'Content-Type': 'application/octet-stream' },
-                    body: file // نرسل الـ file كـ stream مباشرة بدون مشاكل وبأي حجم!
+                    body: file
                 });
 
                 const statusSpan = document.getElementById(itemKey).querySelector('span:last-child');
                 if (ipaRes.ok) {
-                    statusSpan.textContent = "تم الرفع بنجاح ✓";
+                    statusSpan.textContent = "تم بنجاح ✓";
                     statusSpan.style.color = "green";
                 } else {
                     throw new Error();
                 }
             } catch (e) {
                 const statusSpan = document.getElementById(itemKey).querySelector('span:last-child');
-                statusSpan.textContent = "فشل الرفع X";
+                statusSpan.textContent = "فشل X";
                 statusSpan.style.color = "red";
             }
         }
 
         async function loadUploadedApps() {
             const conf = getConfigs();
-            if(!conf.token) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>يرجى حفظ إعدادات التوكن لعرض التطبيقات المرفوعة.</p>"; return; }
-            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة مباشرة...</p>";
+            if(!conf.token) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>يرجى إعداد التوكن أولاً.</p>"; return; }
+            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة عبر البروكسي...</p>";
             
             const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                const res = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
-                if (!res.ok) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة حالياً.</p>"; return; }
+                const res = await fetch(`/api/github-releases/releases/tags/${conf.tag}`, { headers });
+                if (!res.ok) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة.</p>"; return; }
                 const data = await res.json();
                 const assets = data.assets || [];
 
-                if (assets.length === 0) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة حالياً.</p>"; return; }
+                if (assets.length === 0) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات.</p>"; return; }
                 appsContainer.innerHTML = "";
 
                 assets.forEach(asset => {
@@ -309,41 +307,40 @@
                     appsContainer.appendChild(appItem);
                 });
             } catch (e) {
-                appsContainer.innerHTML = "<p style='text-align:center; color:red;'>فشل تحميل التطبيقات المباشرة.</p>";
+                appsContainer.innerHTML = "<p style='text-align:center; color:red;'>فشل تحميل التطبيقات.</p>";
             }
         }
 
         function copyTextDirectly(text) {
-            navigator.clipboard.writeText(text).then(() => alert("تم نسخ الرابط بنجاح!")).catch(() => alert("فشل النسخ التلقائي."));
+            navigator.clipboard.writeText(text).then(() => alert("تم النسخ بنجاح!")).catch(() => alert("فشل النسخ تلقائياً."));
         }
 
         function copySelectedLinks() {
             const checkboxes = document.querySelectorAll('.link-checkbox:checked');
             if (checkboxes.length === 0) { alert("يرجى تحديد الروابط أولاً."); return; }
             const urlsToCopy = Array.from(checkboxes).map(cb => cb.getAttribute('data-url')).join('\n');
-            navigator.clipboard.writeText(urlsToCopy).then(() => alert(`تم نسخ الروابط المحددة (${checkboxes.length}) بنجاح!`));
+            navigator.clipboard.writeText(urlsToCopy).then(() => alert(`تم نسخ الروابط المحددة (${checkboxes.length})!`));
         }
 
         function copyAllLinksInPage() {
             const checkboxes = document.querySelectorAll('.link-checkbox');
             if (checkboxes.length === 0) { alert("لا توجد روابط لنسخها حالياً."); return; }
             const allUrls = Array.from(checkboxes).map(cb => cb.getAttribute('data-url')).join('\n');
-            navigator.clipboard.writeText(allUrls).then(() => alert("تم نسخ جميع روابط الصفحة بنجاح!"));
+            navigator.clipboard.writeText(allUrls).then(() => alert("تم نسخ جميع روابط الصفحة!"));
         }
 
         async function deleteApp(assetId, iconPath) {
-            if (!confirm("هل أنت متأكد من الحذف النهائي للتطبيق وأيقونته؟")) return;
+            if (!confirm("هل أنت متأكد من الحذف النهائي؟")) return;
             const conf = getConfigs();
             const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                // حذف ملف الـ IPA
-                await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/assets/${assetId}`, { method: 'DELETE', headers });
+                // الحذف عبر مسارات البروكسي القياسية
+                await fetch(`/api/github/${conf.owner}/${conf.repo}/releases/assets/${assetId}`, { method: 'DELETE', headers });
                 
-                // جلب الـ sha الخاص بالأيقونة لحذفها
-                const fileCheck = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/${iconPath}`, { headers });
+                const fileCheck = await fetch(`/api/github/${conf.owner}/${conf.repo}/contents/${iconPath}`, { headers });
                 if (fileCheck.ok) {
                     const fileData = await fileCheck.json();
-                    await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/${iconPath}`, {
+                    await fetch(`/api/github/${conf.owner}/${conf.repo}/contents/${iconPath}`, {
                         method: 'DELETE',
                         headers: { ...headers, 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: `Delete icon`, sha: fileData.sha })
