@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة إدارة وتثبيت ملفات IPA</title>
+    <title>CY STORE - لوحة إدارة ملفات IPA</title>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -66,7 +66,7 @@
         </div>
 
         <div id="settings-card" class="settings-card">
-            <h3>تكوين حساب GitHub (يُحفظ محلياً في متصفحك)</h3>
+            <h3>تكوين حساب GitHub</h3>
             <input type="password" id="gh-token" placeholder="رمز الوصول (GitHub Token - ghp_...)">
             <input type="text" id="gh-owner" placeholder="اسم المالك (Owner) مثلاً: ipa-black">
             <input type="text" id="gh-repo" placeholder="اسم المستودع (Repository) مثلاً: ipasoonapps">
@@ -79,12 +79,12 @@
                 <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
             </svg>
             <div class="upload-text">اسحب وأفلت ملفات IPA هنا أو اضغط للتصفح</div>
-            <div class="upload-hint">مرفوع عبر خادم البروكسي الخاص بك بدون مشاكل CORS</div>
+            <div class="upload-hint">الرفع يتم كـ Stream مباشر لحل مشكلة الحجوم الكبيرة</div>
             <input type="file" id="file-input" accept=".ipa" multiple>
         </div>
         
         <div class="upload-progress-container" id="progress-container">
-            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية عبر البروكسي:</h4>
+            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية:</h4>
             <div id="progress-list"></div>
         </div>
     </div>
@@ -172,12 +172,13 @@
             const pItem = document.createElement('div');
             pItem.className = 'progress-item';
             pItem.id = itemKey;
-            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">معالجة الأيقونة...</span>`;
+            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">جاري استخراج الأيقونة...</span>`;
             progressList.appendChild(pItem);
 
             const headers = { 'Authorization': `token ${conf.token}` };
 
             try {
+                // 1. استخراج وقراءة الأيقونة بالكامل بشكل صحيح لتجنب التلف المربوط بالـ Zip structures
                 const arrayBuffer = await file.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
                 let iconBlob = null;
@@ -192,15 +193,15 @@
                     }
                 });
 
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 800));
 
                 if (iconBlob) {
-                    document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الأيقونة (Proxy)...";
                     const reader = new FileReader();
                     reader.readAsDataURL(iconBlob);
                     await new Promise(r => reader.onload = r);
                     const base64Icon = reader.result.split(',')[1];
 
+                    // رفع الأيقونة لمجلد icons عبر البروكسي
                     await fetch(`/api/github/${conf.owner}/${conf.repo}/contents/icons/${iconName}`, {
                         method: 'PUT',
                         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -208,9 +209,10 @@
                     });
                 }
 
+                // 2. فحص الـ Release أو إنشائه تلقائياً عبر مسار البروكسي الموحد الجديد
                 document.getElementById(itemKey).querySelector('span:last-child').textContent = "تهيئة الـ Release...";
                 let releaseId;
-                const relCheck = await fetch(`/api/github-releases/releases/tags/${conf.tag}`, { headers });
+                const relCheck = await fetch(`/api/github/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
                 
                 if (relCheck.ok) {
                     const relData = await relCheck.json();
@@ -219,19 +221,20 @@
                     const createRel = await fetch(`/api/github/${conf.owner}/${conf.repo}/releases`, {
                         method: 'POST',
                         headers: { ...headers, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tag_name: conf.tag, name: conf.tag, body: "IPA Storage" })
+                        body: JSON.stringify({ tag_name: conf.tag, name: conf.tag, body: "CY STORE IPA Storage" })
                     });
                     const newRelData = await createRel.json();
                     releaseId = newRelData.id;
                 }
 
-                document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الـ IPA (Proxy Upload)...";
+                // 3. الرفع الفعلي لملف الـ IPA كـ Stream (نمرر الـ file مباشرة دون تحويله لـ Buffer في المتصفح)
+                document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع الـ IPA الآن...";
                 const uploadUrl = `/api/github-upload/${conf.owner}/${conf.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(file.name)}`;
                 
                 const ipaRes = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: { ...headers, 'Content-Type': 'application/octet-stream' },
-                    body: file
+                    body: file 
                 });
 
                 const statusSpan = document.getElementById(itemKey).querySelector('span:last-child');
@@ -239,11 +242,17 @@
                     statusSpan.textContent = "تم بنجاح ✓";
                     statusSpan.style.color = "green";
                 } else {
-                    throw new Error();
+                    const errData = await ipaRes.json().catch(() => ({}));
+                    if (errData.errors && errData.errors[0].code === 'already_exists') {
+                        statusSpan.textContent = "الملف موجود مسبقاً!";
+                        statusSpan.style.color = "orange";
+                    } else {
+                        throw new Error();
+                    }
                 }
             } catch (e) {
                 const statusSpan = document.getElementById(itemKey).querySelector('span:last-child');
-                statusSpan.textContent = "فشل X";
+                statusSpan.textContent = "فشل في رفع الـ IPA ❌";
                 statusSpan.style.color = "red";
             }
         }
@@ -251,11 +260,11 @@
         async function loadUploadedApps() {
             const conf = getConfigs();
             if(!conf.token) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>يرجى إعداد التوكن أولاً.</p>"; return; }
-            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة عبر البروكسي...</p>";
+            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة...</p>";
             
             const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                const res = await fetch(`/api/github-releases/releases/tags/${conf.tag}`, { headers });
+                const res = await fetch(`/api/github/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
                 if (!res.ok) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة.</p>"; return; }
                 const data = await res.json();
                 const assets = data.assets || [];
@@ -276,25 +285,16 @@
                             <img src="${potentialIconUrl}" onerror="this.src='https://raw.githubusercontent.com/ipa-black/ipa_black_bot/refs/heads/main/IMG_0692.jpeg'" class="app-icon-preview">
                             <div class="app-details">
                                 <div class="app-name">${asset.name}</div>
-                                
                                 <div class="link-row">
                                     <input type="checkbox" class="link-checkbox" data-url="${directIpaUrl}">
-                                    <div class="link-content">
-                                        <strong>رابط الـ IPA المباشر:</strong>
-                                        <span>${directIpaUrl}</span>
-                                    </div>
+                                    <div class="link-content"><strong>رابط الـ IPA المباشر:</strong><span>${directIpaUrl}</span></div>
                                     <button class="copy-single-btn" onclick="copyTextDirectly('${directIpaUrl}')">نسخ</button>
                                 </div>
-                                
                                 <div class="link-row">
                                     <input type="checkbox" class="link-checkbox" data-url="${potentialIconUrl}">
-                                    <div class="link-content">
-                                        <strong>رابط الصورة المباشر:</strong>
-                                        <span>${potentialIconUrl}</span>
-                                    </div>
+                                    <div class="link-content"><strong>رابط الصورة المباشر:</strong><span>${potentialIconUrl}</span></div>
                                     <button class="copy-single-btn" onclick="copyTextDirectly('${potentialIconUrl}')">نسخ</button>
                                 </div>
-                                
                                 <div class="app-size">الحجم: ${sizeInMB} ميجابايت</div>
                             </div>
                         </div>
@@ -308,7 +308,7 @@
         }
 
         function copyTextDirectly(text) {
-            navigator.clipboard.writeText(text).then(() => alert("تم النسخ بنجاح!")).catch(() => alert("فشل النسخ تلقائياً."));
+            navigator.clipboard.writeText(text).then(() => alert("تم النسخ بنجاح!")).catch(() => alert("فشل النسخ."));
         }
 
         function copySelectedLinks() {
