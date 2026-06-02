@@ -1,15 +1,10 @@
-import { Buffer } from 'buffer';
-
 export const config = {
     api: {
-        bodyParser: {
-            sizeLimit: '100mb', // يدعم رفع الملفات الكبيرة
-        },
+        bodyParser: false, // إيقاف الفحص المسبق للحجم في فيرسل لمنع التجمد والخطأ
     },
 };
 
 export default async function handler(req, res) {
-    // إعدادات الـ CORS لتتوافق مع ملف vercel.json الخاص بك
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Requested-With');
@@ -18,67 +13,53 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // جلب التوكن القادم ديناميكياً من متصفحك (من الـ LocalStorage) لحمايته من الحظر
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).json({ error: "لم يتم إرسال التوكن من المتصفح" });
+        return res.status(401).json({ error: "لم يتم إرسال التوكن" });
     }
 
-    const { path, upload, raw, release } = req.query;
+    const { path, upload, raw } = req.query;
     if (!path) {
         return res.status(400).json({ error: "المسار path مطلوب" });
     }
 
-    // الإعدادات الافتراضية لحسابك ومستودعك (تُقرأ تلقائياً من روابط الواجهة)
-    // الروابط ستكون بصيغة: owner/repo/releases... إلخ
+    // تجهيز الهيدرز الأساسية
     const headers = {
         'Authorization': authHeader,
-        'User-Agent': 'Vercel-GitHub-Proxy'
+        'User-Agent': 'Vercel-GitHub-Proxy',
     };
+
+    if (req.headers['content-type']) {
+        headers['Content-Type'] = req.headers['content-type'];
+    }
 
     try {
         let targetUrl = '';
 
-        // 1. إذا كان طلب رفع ملف IPA (github-upload)
         if (upload === '1') {
             targetUrl = `https://uploads.github.com/repos/${path}`;
-            
-            const response = await fetch(targetUrl, {
-                method: req.method,
-                headers: { 
-                    ...headers, 
-                    'Content-Type': req.headers['content-type'] || 'application/octet-stream' 
-                },
-                body: req.body
-            });
-            const data = await response.json();
-            return res.status(response.status).json(data);
-        }
-
-        // 2. إذا كان طلب جلب ملف خام (github-raw)
-        if (raw === '1') {
+        } else if (raw === '1') {
             targetUrl = `https://raw.githubusercontent.com/${path}`;
-            const response = await fetch(targetUrl, { headers });
-            const data = await response.text();
-            return res.status(response.status).send(data);
+        } else {
+            targetUrl = `https://api.github.com/repos/${path}`;
         }
 
-        // 3. طلبات الـ API العادية (الريليس، جلب القائمة، الحذف)
-        targetUrl = `https://api.github.com/repos/${path}`;
-
-        const fetchOptions = {
+        // تمرير البيانات كتدفق (Stream) مباشرة لـ GitHub لمنع قيود الحجم وفشل الرفع
+        const response = await fetch(targetUrl, {
             method: req.method,
-            headers: { ...headers, 'Content-Type': 'application/json' }
-        };
+            headers: headers,
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? req : undefined,
+            duplex: 'half' // تفعيل خاصية التمرير الثنائي للملفات الكبيرة
+        });
 
-        if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-            fetchOptions.body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
-        }
-
-        const response = await fetch(targetUrl, fetchOptions);
-        
         if (response.status === 204) {
             return res.status(204).end();
+        }
+
+        // إذا كان الملف خام (صورة أو IPA)
+        if (raw === '1' || req.method === 'HEAD') {
+            const data = await response.text();
+            return res.status(response.status).send(data);
         }
 
         const data = await response.json();
