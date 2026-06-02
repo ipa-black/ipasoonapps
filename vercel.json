@@ -1,0 +1,19 @@
+{
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Authorization, Content-Type, X-Requested-With" },
+        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/github/:path*", "destination": "/api/github-proxy?path=:path*" },
+    { "source": "/api/github-upload/:path*", "destination": "/api/github-proxy?upload=1&path=:path*" },
+    { "source": "/api/github-raw/:path*", "destination": "/api/github-proxy?raw=1&path=:path*" },
+    { "source": "/api/github-releases/:path*", "destination": "/api/github-proxy?release=1&path=:path*" }
+  ]
+}
