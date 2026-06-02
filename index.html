@@ -3,32 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة وتثبيت ملفات IPA</title>
+    <title>لوحة إدارة وتثبيت ملفات IPA</title>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8fafc; color: #333333; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .container { text-align: center; max-width: 650px; width: 100%; padding: 30px; background: #ffffff; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 30px; }
-        .profile-img { width: 130px; height: 130px; border-radius: 50%; border: 4px solid #0066cc; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 102, 204, 0.15); margin-bottom: 25px; }
-        .upload-box { display: block; border: 2px dashed #0066cc; background-color: #f4f9ff; border-radius: 15px; padding: 50px 20px; cursor: pointer; transition: all 0.3s ease; }
-        .upload-box.dragover { background-color: #e6f2ff; border-color: #004499; transform: scale(1.02); }
-        .upload-icon { width: 60px; height: 60px; margin-bottom: 15px; fill: #0066cc; }
-        .upload-text { font-size: 1.2rem; font-weight: 600; color: #0066cc; margin-bottom: 8px; }
-        .upload-hint { font-size: 0.9rem; color: #666666; }
+        .container { max-width: 650px; width: 100%; padding: 30px; background: #ffffff; border-radius: 20px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 25px; }
+        .profile-img { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #0066cc; object-fit: cover; box-shadow: 0 4px 10px rgba(0, 102, 204, 0.15); margin-bottom: 20px; }
+        
+        /* قسم الإعدادات السري */
+        .settings-card { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: right; display: none; border: 1px solid #cbd5e1; }
+        .settings-card h3 { color: #1e293b; margin-bottom: 12px; font-size: 1.1rem; }
+        .settings-card input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; text-align: left; direction: ltr; }
+        
+        .upload-box { display: block; border: 2px dashed #0066cc; background-color: #f4f9ff; border-radius: 15px; padding: 40px 20px; cursor: pointer; transition: all 0.3s ease; text-align: center; }
+        .upload-box.dragover { background-color: #e6f2ff; border-color: #004499; transform: scale(1.01); }
+        .upload-icon { width: 50px; height: 50px; margin-bottom: 15px; fill: #0066cc; }
+        .upload-text { font-size: 1.1rem; font-weight: 600; color: #0066cc; margin-bottom: 6px; }
+        .upload-hint { font-size: 0.85rem; color: #666666; }
+        
         .upload-progress-container { margin-top: 20px; text-align: right; max-height: 200px; overflow-y: auto; border-top: 1px solid #eee; padding-top: 15px; display: none; }
-        .progress-item { font-size: 0.9rem; margin-bottom: 8px; color: #475569; display: flex; justify-content: space-between; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; }
+        .progress-item { font-size: 0.9rem; margin-bottom: 8px; color: #475569; display: flex; justify-content: space-between; background: #e2e8f0; padding: 8px 12px; border-radius: 6px; }
         #file-input { display: none; }
         
         .apps-section { width: 100%; max-width: 650px; }
         .apps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-right: 4px solid #0066cc; padding-right: 10px; }
-        .apps-title { font-size: 1.3rem; color: #0066cc; }
-        .bulk-actions { display: flex; gap: 10px; }
+        .apps-title { font-size: 1.2rem; color: #0066cc; }
+        .bulk-actions { display: flex; gap: 8px; }
         
         .btn { border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; }
         .btn-primary { background-color: #0066cc; color: white; }
         .btn-primary:hover { background-color: #004499; }
         .btn-secondary { background-color: #e2e8f0; color: #334155; }
         .btn-secondary:hover { background-color: #cbd5e1; }
+        .btn-danger { background-color: #ef4444; color: white; }
         
         .apps-list { display: flex; flex-direction: column; gap: 15px; }
         .app-item { display: flex; align-items: flex-start; justify-content: space-between; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; gap: 15px; }
@@ -37,7 +45,6 @@
         .app-details { text-align: right; display: flex; flex-direction: column; gap: 10px; width: 100%; overflow: hidden; }
         
         .app-name { font-size: 1.1rem; font-weight: 700; color: #1e293b; word-break: break-all; }
-        
         .link-row { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #f1f5f9; }
         .link-checkbox { width: 16px; height: 16px; cursor: pointer; }
         .link-content { flex-grow: 1; font-size: 0.85rem; color: #64748b; word-break: break-all; text-align: right; }
@@ -46,7 +53,6 @@
         
         .copy-single-btn { background: #e0f2fe; color: #0369a1; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
         .copy-single-btn:hover { background: #bae6fd; }
-
         .app-size { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
         .delete-btn { background-color: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; flex-shrink: 0; align-self: center; }
         .delete-btn:hover { background-color: #dc2626; }
@@ -55,19 +61,32 @@
 <body>
 
     <div class="container">
-        <img src="https://raw.githubusercontent.com/ipa-black/ipa_black_bot/refs/heads/main/IMG_0692.jpeg" alt="Logo" class="profile-img">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button class="btn btn-secondary" onclick="toggleSettingsPanel()">إعدادات المطور ⚙️</button>
+            <img src="https://raw.githubusercontent.com/ipa-black/ipa_black_bot/refs/heads/main/IMG_0692.jpeg" alt="Logo" class="profile-img" style="margin-bottom:0;">
+            <div style="width:110px;"></div>
+        </div>
+
+        <div id="settings-card" class="settings-card">
+            <h3>تكوين حساب GitHub (يُحفظ في متصفحك فقط)</h3>
+            <input type="password" id="gh-token" placeholder="رمز الوصول الشخصي الشخصي (GitHub Token - ghp_...)">
+            <input type="text" id="gh-owner" placeholder="اسم الحساب المالك للمستودع (Owner) مثلاً: ipa-black">
+            <input type="text" id="gh-repo" placeholder="اسم المستودع (Repository) مثلاً: ipasoonapps">
+            <input type="text" id="gh-tag" placeholder="وسم الإصدار (Release Tag) مثلاً: apps">
+            <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%;">حفظ الإعدادات محلياً</button>
+        </div>
 
         <div id="drop-zone" class="upload-box">
             <svg class="upload-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
             </svg>
             <div class="upload-text">اسحب وأفلت ملفات IPA هنا أو اضغط للتصفح</div>
-            <div class="upload-hint">مجهز للرفع المتعدد والآمن عبر سيرفرات Vercel</div>
+            <div class="upload-hint">مباشر ومفتوح الحجم - الرفع آمن ومباشر إلى جيت هب</div>
             <input type="file" id="file-input" accept=".ipa" multiple>
         </div>
         
         <div class="upload-progress-container" id="progress-container">
-            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية:</h4>
+            <h4 style="margin-bottom: 10px; color: #334155;">حالة الرفع الحالية المباشرة:</h4>
             <div id="progress-list"></div>
         </div>
     </div>
@@ -84,9 +103,15 @@
     </div>
 
     <script>
-        const API_URL = '/api/upload';
-        const REPO_OWNER = "ipa-black";
-        const REPO_NAME = "ipasoonapps";
+        // دالة جلب الإعدادات من الـ LocalStorage
+        function getConfigs() {
+            return {
+                token: localStorage.getItem('gh_token') || '',
+                owner: localStorage.getItem('gh_owner') || 'ipa-black',
+                repo: localStorage.getItem('gh_repo') || 'ipasoonapps',
+                tag: localStorage.getItem('gh_tag') || 'apps'
+            };
+        }
 
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
@@ -94,9 +119,35 @@
         const progressList = document.getElementById('progress-list');
         const appsContainer = document.getElementById('apps-container');
 
-        document.addEventListener('DOMContentLoaded', loadUploadedApps);
-        dropZone.addEventListener('click', () => fileInput.click());
+        document.addEventListener('DOMContentLoaded', () => {
+            const conf = getConfigs();
+            document.getElementById('gh-token').value = conf.token;
+            document.getElementById('gh-owner').value = conf.owner;
+            document.getElementById('gh-repo').value = conf.repo;
+            document.getElementById('gh-tag').value = conf.tag;
+            
+            if(!conf.token) {
+                document.getElementById('settings-card').style.display = 'block';
+            }
+            loadUploadedApps();
+        });
 
+        function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-card');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gh_token', document.getElementById('gh-token').value.trim());
+            localStorage.setItem('gh_owner', document.getElementById('gh-owner').value.trim());
+            localStorage.setItem('gh_repo', document.getElementById('gh-repo').value.trim());
+            localStorage.setItem('gh_tag', document.getElementById('gh-tag').value.trim());
+            alert('تم حفظ الإعدادات بنجاح في متصفحك الحالي!');
+            document.getElementById('settings-card').style.display = 'none';
+            loadUploadedApps();
+        }
+
+        dropZone.addEventListener('click', () => fileInput.click());
         ['dragenter', 'dragover'].forEach(name => {
             dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
         });
@@ -108,6 +159,8 @@
         fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); });
 
         async function handleFiles(files) {
+            const conf = getConfigs();
+            if(!conf.token) { alert('برجاء إدخال توكن جيت هب أولاً من لوحة الإعدادات!'); return; }
             progressContainer.style.display = "block";
             const ipaFiles = Array.from(files).filter(f => f.name.endsWith('.ipa'));
             for (let file of ipaFiles) {
@@ -117,12 +170,15 @@
         }
 
         async function uploadSingleFile(file) {
+            const conf = getConfigs();
             const itemKey = 'status-' + Math.random().toString(36).substr(2, 9);
             const pItem = document.createElement('div');
             pItem.className = 'progress-item';
             pItem.id = itemKey;
-            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">جاري المعالجة...</span>`;
+            pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">جاري استخراج الأيقونة...</span>`;
             progressList.appendChild(pItem);
+
+            const headers = { 'Authorization': `token ${conf.token}` };
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
@@ -139,36 +195,53 @@
                     }
                 });
 
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 1000));
 
+                // 1. رفع الأيقونة مباشرة إلى مستودع جيت هب
                 if (iconBlob) {
-                    document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع الأيقونة...";
+                    document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع الأيقونة للـ GitHub...";
                     const reader = new FileReader();
                     reader.readAsDataURL(iconBlob);
                     await new Promise(r => reader.onload = r);
                     const base64Icon = reader.result.split(',')[1];
 
-                    await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'upload_icon', iconName, iconData: base64Icon })
+                    await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/icons/${iconName}`, {
+                        method: 'PUT',
+                        headers: { ...headers, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Upload icon ${iconName}`, content: base64Icon })
                     });
                 }
 
-                document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع التطبيق...";
-                const ipaReader = new FileReader();
-                ipaReader.readAsDataURL(file);
-                await new Promise(r => ipaReader.onload = r);
-                const base64Ipa = ipaReader.result.split(',')[1];
+                // 2. التحقق من الريليس أو إنشائه
+                document.getElementById(itemKey).querySelector('span:last-child').textContent = "تهيئة الـ Release...";
+                let releaseId;
+                const relCheck = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
+                
+                if (relCheck.ok) {
+                    const relData = await relCheck.json();
+                    releaseId = relData.id;
+                } else {
+                    const createRel = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases`, {
+                        method: 'POST',
+                        headers: { ...headers, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tag_name: conf.tag, name: conf.tag, body: "IPA Storage" })
+                    });
+                    const newRelData = await createRel.json();
+                    releaseId = newRelData.id;
+                }
 
-                const res = await fetch(API_URL, {
+                // 3. رفع ملف الـ IPA مباشرة وبدون استهلاك ذاكرة (مستقر وسريع جداً مهما كبر الحجم)
+                document.getElementById(itemKey).querySelector('span:last-child').textContent = "جاري رفع ملف الـ IPA المباشر...";
+                const uploadUrl = `https://uploads.github.com/repos/${conf.owner}/${conf.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(file.name)}`;
+                
+                const ipaRes = await fetch(uploadUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'upload_ipa', fileName: file.name, fileData: base64Ipa })
+                    headers: { ...headers, 'Content-Type': 'application/octet-stream' },
+                    body: file // نرسل الـ file كـ stream مباشرة بدون مشاكل وبأي حجم!
                 });
 
                 const statusSpan = document.getElementById(itemKey).querySelector('span:last-child');
-                if (res.ok) {
+                if (ipaRes.ok) {
                     statusSpan.textContent = "تم الرفع بنجاح ✓";
                     statusSpan.style.color = "green";
                 } else {
@@ -182,19 +255,24 @@
         }
 
         async function loadUploadedApps() {
-            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة...</p>";
+            const conf = getConfigs();
+            if(!conf.token) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>يرجى حفظ إعدادات التوكن لعرض التطبيقات المرفوعة.</p>"; return; }
+            appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>جاري جلب القائمة مباشرة...</p>";
+            
+            const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                const res = await fetch(API_URL);
-                if (!res.ok) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات حالياً.</p>"; return; }
-                const assets = await res.json();
+                const res = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/tags/${conf.tag}`, { headers });
+                if (!res.ok) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة حالياً.</p>"; return; }
+                const data = await res.json();
+                const assets = data.assets || [];
 
-                if (!assets || assets.length === 0) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات حالياً.</p>"; return; }
+                if (assets.length === 0) { appsContainer.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد تطبيقات مرفوعة حالياً.</p>"; return; }
                 appsContainer.innerHTML = "";
 
                 assets.forEach(asset => {
                     const cleanName = asset.name.replace('.ipa', '');
                     const directIpaUrl = asset.browser_download_url;
-                    const potentialIconUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/icons/${cleanName}.png`;
+                    const potentialIconUrl = `https://raw.githubusercontent.com/${conf.owner}/${conf.repo}/main/icons/${cleanName}.png`;
                     const sizeInMB = (asset.size / (1024 * 1024)).toFixed(2);
 
                     const appItem = document.createElement('div');
@@ -231,48 +309,46 @@
                     appsContainer.appendChild(appItem);
                 });
             } catch (e) {
-                appsContainer.innerHTML = "<p style='text-align:center; color:red;'>فشل تحميل التطبيقات.</p>";
+                appsContainer.innerHTML = "<p style='text-align:center; color:red;'>فشل تحميل التطبيقات المباشرة.</p>";
             }
         }
 
         function copyTextDirectly(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("تم نسخ الرابط بنجاح!");
-            }).catch(() => {
-                alert("فشل نسخ الرابط يدوياً.");
-            });
+            navigator.clipboard.writeText(text).then(() => alert("تم نسخ الرابط بنجاح!")).catch(() => alert("فشل النسخ التلقائي."));
         }
 
-        // نسخ الروابط المحددة بـ Checkbox فقط
         function copySelectedLinks() {
             const checkboxes = document.querySelectorAll('.link-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert("يرجى تحديد الروابط أولاً عبر مربعات الاختيار.");
-                return;
-            }
+            if (checkboxes.length === 0) { alert("يرجى تحديد الروابط أولاً."); return; }
             const urlsToCopy = Array.from(checkboxes).map(cb => cb.getAttribute('data-url')).join('\n');
-            navigator.clipboard.writeText(urlsToCopy).then(() => {
-                alert(`تم نسخ الروابط المحددة (${checkboxes.length}) بنجاح!`);
-            });
+            navigator.clipboard.writeText(urlsToCopy).then(() => alert(`تم نسخ الروابط المحددة (${checkboxes.length}) بنجاح!`));
         }
 
-        // نسخ كل روابط الصفحة دفعة واحدة
         function copyAllLinksInPage() {
             const checkboxes = document.querySelectorAll('.link-checkbox');
-            if (checkboxes.length === 0) {
-                alert("لا توجد روابط لنسخها حالياً.");
-                return;
-            }
+            if (checkboxes.length === 0) { alert("لا توجد روابط لنسخها حالياً."); return; }
             const allUrls = Array.from(checkboxes).map(cb => cb.getAttribute('data-url')).join('\n');
-            navigator.clipboard.writeText(allUrls).then(() => {
-                alert("تم نسخ جميع روابط الصفحة بنجاح!");
-            });
+            navigator.clipboard.writeText(allUrls).then(() => alert("تم نسخ جميع روابط الصفحة بنجاح!"));
         }
 
         async function deleteApp(assetId, iconPath) {
             if (!confirm("هل أنت متأكد من الحذف النهائي للتطبيق وأيقونته؟")) return;
+            const conf = getConfigs();
+            const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                await fetch(`${API_URL}?assetId=${assetId}&iconPath=${encodeURIComponent(iconPath)}`, { method: 'DELETE' });
+                // حذف ملف الـ IPA
+                await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/releases/assets/${assetId}`, { method: 'DELETE', headers });
+                
+                // جلب الـ sha الخاص بالأيقونة لحذفها
+                const fileCheck = await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/${iconPath}`, { headers });
+                if (fileCheck.ok) {
+                    const fileData = await fileCheck.json();
+                    await fetch(`https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/${iconPath}`, {
+                        method: 'DELETE',
+                        headers: { ...headers, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Delete icon`, sha: fileData.sha })
+                    });
+                }
                 loadUploadedApps();
             } catch (e) {
                 alert("حدث خطأ أثناء الحذف.");
