@@ -175,7 +175,6 @@
             pItem.innerHTML = `<span>${file.name}</span> <span style="color:#0066cc;">معالجة الأيقونة...</span>`;
             progressList.appendChild(pItem);
 
-            // نرسل التوكن في الهيدر ليمر عبر البروكسي بأمان
             const headers = { 'Authorization': `token ${conf.token}` };
 
             try {
@@ -195,7 +194,6 @@
 
                 await new Promise(r => setTimeout(r, 1000));
 
-                // 1. رفع الأيقونة عبر البروكسي العام المعرّف بـ vercel.json
                 if (iconBlob) {
                     document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الأيقونة (Proxy)...";
                     const reader = new FileReader();
@@ -210,7 +208,6 @@
                     });
                 }
 
-                // 2. التحقق من الـ Release عبر البروكسي الموجه للـ Releases
                 document.getElementById(itemKey).querySelector('span:last-child').textContent = "تهيئة الـ Release...";
                 let releaseId;
                 const relCheck = await fetch(`/api/github-releases/releases/tags/${conf.tag}`, { headers });
@@ -228,7 +225,6 @@
                     releaseId = newRelData.id;
                 }
 
-                // 3. رفع ملف الـ IPA عبر مسار الـ github-upload المخصص في الـ rewrites لديك
                 document.getElementById(itemKey).querySelector('span:last-child').textContent = "رفع الـ IPA (Proxy Upload)...";
                 const uploadUrl = `/api/github-upload/${conf.owner}/${conf.repo}/releases/${releaseId}/assets?name=${encodeURIComponent(file.name)}`;
                 
@@ -334,7 +330,6 @@
             const conf = getConfigs();
             const headers = { 'Authorization': `token ${conf.token}` };
             try {
-                // الحذف عبر مسارات البروكسي القياسية
                 await fetch(`/api/github/${conf.owner}/${conf.repo}/releases/assets/${assetId}`, { method: 'DELETE', headers });
                 
                 const fileCheck = await fetch(`/api/github/${conf.owner}/${conf.repo}/contents/${iconPath}`, { headers });
